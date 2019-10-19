@@ -93,6 +93,7 @@ Q = data.frame(State = g, Count = e)
 
 Q$State = as.character(Q$State)
 Q1 = inner_join(newData,Q, by = c("State" = "State"))
+Q1 = distinct(Q1,State,.keep_all = TRUE)
 Q1range = Q1 %>% filter(Count == max(Count) | Count == min(Count)) #select only max an min count
 Q1rangew = Q1 %>% filter(Count != max(Count) & Count != min(Count)) # filter out max and min
 theme_set(theme_dark())
@@ -109,6 +110,7 @@ MedianABV$State <- str_trim(as.character(MedianABV$State))
 MedianIBU$State <- str_trim(as.character(MedianIBU$State))
 Q4 = inner_join(newData,MedianABV, by = c("State" = "State"))
 Q4 = inner_join(Q4,MedianIBU, by = c("State" = "State"))
+Q4 = distinct(Q4,State,.keep_all = TRUE)
 Q4ABVrange = Q4 %>% filter(medABV == max(medABV) | medABV == min(medABV)) # filter in max and min ABV
 Q4IBUrange = Q4 %>% filter(medIBU == max(medIBU) | medIBU == min(medIBU)) # filter in max and min IBU
 
@@ -136,20 +138,17 @@ Q5 <- Q4
 Q5ABVrange = Q5 %>% filter(ABV == max(ABV) | ABV == min(ABV))
 Q5IBUrange = Q5 %>% filter(IBU == max(IBU) | IBU == min(IBU))
 
-# select the states that has the max and min. use distinct to avoid repetition. we should only have 2 rows of min and max data.
-firstABV = distinct(Q5ABVrange,ABV,.keep_all = TRUE)$State[1] #first state
-secondABV = distinct(Q5ABVrange,ABV,.keep_all = TRUE)$State[2] #second state
-firstIBU = distinct(Q5IBUrange,IBU,.keep_all = TRUE)$State[1]
-secondIBU = distinct(Q5IBUrange,IBU,.keep_all = TRUE)$State[2]
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q5,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2)  + geom_text(data = Q5ABVrange,aes(Long,Lat, label = ABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 3)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q5,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q5IBUrange,aes(Long,Lat, label = IBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 3)
 
-# exclude the states with min and max values
-Q5ABVrangeWO = Q5 %>% filter(ABV != max(ABV) & ABV != min(ABV) & State != firstABV & State != secondABV) 
-Q5IBUrangeWO = Q5 %>% filter(IBU != max(IBU) & IBU != min(IBU) & State != firstIBU & State != secondIBU)
+### Question 5 without AK and HI
+Q5 <- Q4w
+Q5ABVrange = Q5 %>% filter(ABV == max(ABV) | ABV == min(ABV))
+Q5IBUrange = Q5 %>% filter(IBU == max(IBU) | IBU == min(IBU))
+
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q5,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2)  + geom_text(data = Q5ABVrange,aes(Long,Lat, label = ABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 3)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q5,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q5IBUrange,aes(Long,Lat, label = IBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 3)
 
 
-
-ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q5,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q5ABVrangeWO,aes(Long,Lat, label = ABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'white', size = 2) + geom_text(data = Q5ABVrange,aes(Long,Lat, label = ABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2)
-
-ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q5,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q5IBUrangeWO,aes(Long,Lat, label = IBU),hjust = 0, nudge_x = 0.1, nudge_y = -0.5, color = 'white', size = 2) + geom_text(data = Q5IBUrange,aes(Long,Lat, label = IBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2)
 
 
