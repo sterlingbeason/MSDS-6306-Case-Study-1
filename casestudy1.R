@@ -34,15 +34,14 @@ mergeData <- dplyr::rename(mergeData, beerName = Name.y)
 #mergeData %>% summarise_all(fun(sum(is.na(.))))
 colSums(is.na(mergeData))
 
-colSums(is.na(mergeData.cleanABV))
-summary(mergeData.cleanABV)
-
-#4.Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+ #4.Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
 
 
 #we will create 2 df for ABV not NA and IBU not NA - we dont want 1 df for both because we loose a lot of data - if we considerABV,... only 62 deleted and IBU
 
 mergeData.cleanABV <- mergeData %>% filter(!is.na(ABV))
+colSums(is.na(mergeData.cleanABV))
+summary(mergeData.cleanABV)
 #MedianABV <- mergeData.cleanABV %>% group_by(State) %>% summarise(medABV = median(ABV), State = count(State))
 MedianABV <- ddply(mergeData.cleanABV, .(State), summarise, medABV=median(ABV))
 MedianABV %>% ggplot(aes(fill=State, y=medABV, x=State)) + geom_bar(stat="identity")
