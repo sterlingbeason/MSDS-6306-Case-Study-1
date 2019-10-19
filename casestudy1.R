@@ -67,6 +67,8 @@ map_data('usa')
 map()
 usa = map_data('usa')
 
+us_states <- map_data("state")
+
 map <- read.csv(file.choose(),header = TRUE,sep=";")  #This is the usa coordinates csv file
 
 names(map)
@@ -89,12 +91,14 @@ e = c(brewState$count$freq)
 Q = data.frame(State = g, Count = e)
 
 Q1 = inner_join(newData,Q, by = c("State" = "State"))
+Q1range = Q1 %>% filter(Count == max(Count) | Count == min(Count))
 theme_set(theme_dark())
-ggplot() + geom_polygon(data = usa, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q1,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q1,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.8, color = 'white', size = 2.5)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q1,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q1,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.8, color = 'white', size = 2.5)  + geom_text(data = Q1range,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.8, color = 'red', size = 2.5)
 
 #### Map without Alaska and Hawaii
 Q1w = Q1 %>% filter(State != 'AK' & State != 'HI')
-ggplot() + geom_polygon(data = usa, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q1w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q1w,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.3, color = 'white', size = 2.5)
+Q1wrange = Q1w %>% filter(Count == max(Count) | Count == min(Count))
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q1w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q1w,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.3, color = 'white', size = 2.5) + geom_text(data = Q1wrange,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.3, color = 'red', size = 2.5)
 
 ###### Using maps for the median data ########
 MedianABV$State <- str_trim(as.character(MedianABV$State))
@@ -104,9 +108,9 @@ Q42 = inner_join(newData,MedianIBU, by = c("State" = "State"))
 Q4range = Q4 %>% filter(medABV == max(medABV) | medABV == min(medABV))
 Q42range = Q42 %>% filter(medIBU == max(medIBU) | medIBU == min(medIBU))
 
-ggplot() + geom_polygon(data = usa, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q4,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q4,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q4range,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q4,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q4,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q4range,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
 
-ggplot() + geom_polygon(data = usa, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q42,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q42,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0.1, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q42range,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q42,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q42,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0.1, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q42range,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
 
 # Now lets take the outlier states to make the gragh look better.
 Q4w = Q4 %>% filter(State != 'AK' & State != 'HI')
@@ -114,6 +118,6 @@ Q42w = Q42 %>% filter(State != 'AK' & State != 'HI')
 Q4wrange = Q4w %>% filter(medABV == max(medABV) | medABV == min(medABV))
 Q42wrange = Q42w %>% filter(medIBU == max(medIBU) | medIBU == min(medIBU))
 
-ggplot() + geom_polygon(data = usa, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q4w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q4w,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q4wrange,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q4w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q4w,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q4wrange,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
 
-ggplot() + geom_polygon(data = usa, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q42w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q42w,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0.1, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q42wrange,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q42w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q42w,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0.1, nudge_y = -0.5, color = 'white', size = 2.5) + geom_text(data = Q42wrange,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5)
