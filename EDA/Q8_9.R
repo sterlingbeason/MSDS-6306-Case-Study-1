@@ -74,7 +74,7 @@ Specificity
 
 
 
-#This for getting which of the 2 classes performed better bases on the model and the use of 100 different iterations
+#This for getting which of the 2 classes performed better bases on the model and the use of 100 different iterations for Spliting the data
 
 iterations = 100
 
@@ -106,7 +106,9 @@ MeanAcc = mean(stat$c.acc.)
 MeanSpec = mean(stat$c.spec.)
 MeanSens = mean(stat$c.sens.)
 
-
+MeanAcc 
+MeanSpec
+MeanSens
 
 #(9)
 # Now lets train using KNN but with IBU and ABV used as a seperate variable to classify
@@ -140,6 +142,9 @@ MeanAcc = mean(stat$c.acc.)
 MeanSpec = mean(stat$c.spec.)
 MeanSens = mean(stat$c.sens.)
 
+MeanAcc 
+MeanSpec
+MeanSens
 
 # Do the same for ABV
 for(j in 1:iterations)
@@ -166,4 +171,6 @@ MeanAcc = mean(stat$c.acc.)
 MeanSpec = mean(stat$c.spec.)
 MeanSens = mean(stat$c.sens.)
 
-
+MeanAcc 
+MeanSpec
+MeanSens
