@@ -27,6 +27,8 @@ typeIPA <- cbind(mergeData.clean, type='IPA', stringsAsFactors=F) %>% filter(gre
 IPA.Ales <- union(typeAles, typeIPA)
 IPA.Ales$type <- as.factor(IPA.Ales$type)
 
+
+
 #KNN model
 set.seed(100)
 splitPerc = .7
@@ -112,6 +114,13 @@ MeanSens
 
 #(9)
 # Now lets train using KNN but with IBU and ABV used as a seperate variable to classify
+mergeData.cleanIBU <- mergeData %>% filter(!is.na(IBU))
+typeAles <- cbind(mergeData.cleanIBU, type='Ales', stringsAsFactors=F) %>% filter(grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', beerName, ignore.case=T))
+
+typeIPA <- cbind(mergeData.cleanIBU, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', beerName, ignore.case=T))
+
+IPA.Ales <- union(typeAles, typeIPA)
+
 iterations = 100
 
 stat = data.frame()
@@ -147,6 +156,15 @@ MeanSpec
 MeanSens
 
 # Do the same for ABV
+mergeData.cleanABV <- mergeData %>% filter(!is.na(ABV))
+typeAles <- cbind(mergeData.cleanABV, type='Ales', stringsAsFactors=F) %>% filter(grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', beerName, ignore.case=T))
+
+typeIPA <- cbind(mergeData.cleanABV, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', beerName, ignore.case=T))
+
+IPA.Ales <- union(typeAles, typeIPA)
+
+stat = data.frame()
+
 for(j in 1:iterations)
 {
   
