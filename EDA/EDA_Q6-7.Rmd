@@ -1,0 +1,53 @@
+---
+title: 'EDA: Q6-7'
+author: "Sterling Beason"
+date: "10/20/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# llibraries
+library(tidyverse)
+library(dplyr)
+library(plyr)
+
+# read in data
+beers = read.csv('../data/Beers.csv', header = TRUE)
+brew <- read.csv('../data/Breweries.csv',header = TRUE)
+```
+
+
+## ABV by State Summary
+```{r}
+# CODE FROM Ike's Contribution
+# 1 breweries per state
+
+brewState <- brew %>% group_by(State)%>% summarize(count = count(State))
+
+
+#2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.  (RMD only, this does not need to be included in the presentation or the deck.)
+
+#Observe that ID on beers - Brewery_id and and breweries - Brew_ID  - we rename by Brew_ID
+
+mergeData = inner_join(brew,beers, by = c("Brew_ID" = "Brewery_id"))
+
+mergeData <- dplyr::rename(mergeData, brewName = Name.x)
+mergeData <- dplyr::rename(mergeData, beerName = Name.y)
+
+ #4.Compute the median alcohol content and international bitterness unit for each state. Plot a bar chart to compare.
+
+
+#we will create 2 df for ABV not NA and IBU not NA - we dont want 1 df for both because we loose a lot of data - if we considerABV,... only 62 deleted and IBU
+
+mergeData.cleanABV <- mergeData %>% filter(!is.na(ABV))
+
+# 6.Comment on the summary statistics and distribution of the ABV variable. ???
+summary(mergeData.cleanABV$ABV)
+mergeData.cleanABV %>% select(ABV) %>% ggplot(mapping=aes(x = ABV)) + geom_histogram()
+```
+
+```{r}
+beers %>% filter(!is.na(IBU)) %>% select(ABV, IBU) %>% ggplot(mapping = aes(ABV, IBU)) + geom_point() + stat_summary(fun.data=mean_cl_normal) + geom_smooth(method='lm')
+
+```
