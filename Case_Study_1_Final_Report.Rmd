@@ -1,0 +1,358 @@
+---
+title: "Case Study 1 - Final Report"
+author: "Ikenna Nwaogu & Sterling Beason"
+date: "10/26/2019"
+output: html_document
+---
+
+```{r setup, echo=FALSE, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# libraries
+library(tidyverse)
+library(dplyr)
+library(plyr)
+library(maps)
+library(class)
+library(caret)
+
+# read in data
+beers = read.csv('./data/Beers.csv', header = TRUE) # Import Beers data
+brew = read.csv('./data/Breweries.csv',header = TRUE) # Import Breweries data
+map = read.csv('./data/us-zip-code-latitude-and-longitude.csv',header = TRUE,sep=";")  # Import Zipcode USA Coordinates
+```
+### Acronyms
+**Alcohol Content = ABV**
+
+**International Bitterness Units = IBU**
+
+**K Nearest Neighbors = KNN**
+
+## Question 1: Breweries Per State
+**Below are the frequency of breweries per state. Colorado has the most at 47.**
+```{r, echo=FALSE}
+brewState <- brew %>% group_by(State)%>% summarize(count = count(State))
+knitr::kable(x = brewState$count, format="html")
+```
+
+## Question 2: Merge Beer and Breweries Data
+### First and Last Six Observations
+```{r, echo=FALSE}
+#Observe that ID on beers - Brewery_id and and breweries - Brew_ID  - we rename by Brew_ID
+
+mergeData = inner_join(brew,beers, by = c("Brew_ID" = "Brewery_id"))
+
+mergeData <- dplyr::rename(mergeData, brewName = Name.x)
+mergeData <- dplyr::rename(mergeData, beerName = Name.y)
+
+# check merged data
+head(mergeData) # first 6 observations
+tail(mergeData) # last 6 observations
+```
+
+## Question 3: Missing Values in Each Column
+**ABV and IBU both have missing values in the dataset. ABV and IBU have 62 and 1005 NA values respectively**
+```{r, echo=FALSE}
+colSums(is.na(mergeData))
+```
+
+## Question 4: Median ABV and IBU for Each State
+**ABV has less variance than the IBU variable. Interestingly Maine has the highest median IBU**
+```{r, echo=FALSE}
+#we will create 2 df for ABV not NA and IBU not NA - we dont want 1 df for both because we loose a lot of data - if we considerABV,... only 62 deleted and IBU
+
+# Plot ABV by state
+mergeData.cleanABV <- mergeData %>% filter(!is.na(ABV))
+MedianABV <- ddply(mergeData.cleanABV, .(State), summarise, medABV=median(ABV))
+MedianABV %>% ggplot(aes(fill=State, y=medABV, x=State)) + geom_bar(stat="identity") + labs(title = 'Median ABV By State')
+
+# Plot IBU by state
+mergeData.cleanIBU <- mergeData %>%  filter(!is.na(IBU))
+MedianIBU <- ddply(mergeData.cleanIBU, .(State), summarise, medIBU=median(IBU))
+MedianIBU %>% ggplot(aes(fill=State, y=medIBU, x=State)) + geom_bar(stat="identity") + labs(title = 'Median IBU By State')
+```
+
+## Question 5: Highest ABV and IBU by State
+**Colorado has the highest ABV and Oregon has the highest IBU.**
+```{r, echo=FALSE}
+# Find state with highest ABV
+mergeData.cleanABV %>% filter(ABV == max(ABV)) %>% select(State,ABV)
+
+# Find state with highest IBU
+mergeData.cleanIBU %>% filter(IBU == max(IBU)) %>% select(State,IBU)
+```
+
+### Maps For Questions 1, 4, 5
+```{r, echo=FALSE}
+#map_data('usa')
+#map()
+usa = map_data('usa')
+
+us_states <- map_data("state")
+
+#map <- map %>% select(State, Latitude, Longitude) %>% group_by(State) %>% summarise(long = median(Longitude))
+map <- ddply(map, .(State), summarise, Long=median(Longitude), Lat = median(Latitude))
+
+coords <- map
+
+# Add coordinate to merge data by join
+mergeData.clean = mergeData.cleanABV  %>% filter(!is.na(IBU))
+mergeData.clean$State <- str_trim(mergeData.clean$State)
+mergeData.clean$State <- as.character(mergeData.clean$State)
+coords$State <- as.character(coords$State)
+newData <- inner_join(mergeData.clean,coords, by = c("State" = "State"))
+
+brewState$count$x <- as.character(str_trim(brewState$count$x))
+
+g = c(brewState$count$x) 
+e = c(brewState$count$freq)
+Q = data.frame(State = g, Count = e)
+
+Q$State = as.character(Q$State)
+Q1 = inner_join(newData,Q, by = c("State" = "State"))
+Q1 = distinct(Q1,State,.keep_all = TRUE)
+Q1range = Q1 %>% filter(Count == max(Count) | Count == min(Count)) #select only max an min count
+Q1rangew = Q1 %>% filter(Count != max(Count) & Count != min(Count)) # filter out max and min
+theme_set(theme_dark())
+
+#### Map without Alaska and Hawaii
+# LOWER 48 FREQ
+Q1w = Q1 %>% filter(State != 'AK' & State != 'HI')
+Q1wrange = Q1w %>% filter(Count == max(Count) | Count == min(Count)) # filter in only max and min
+Q1wrangew = Q1w %>% filter(Count != max(Count) & Count != min(Count)) # filter out max and min
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q1w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q1wrangew,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.3, color = 'white', size = 2.3) + geom_text(data = Q1wrange,aes(Long,Lat, label = Count),hjust = 0, nudge_x = 0.2, nudge_y = -0.3, color = 'red', size = 2.5) + labs(title = 'Brewery Frequency By State')
+
+###### Using maps for the median data ########
+MedianABV$State <- str_trim(as.character(MedianABV$State))
+MedianIBU$State <- str_trim(as.character(MedianIBU$State))
+Q4 = inner_join(newData,MedianABV, by = c("State" = "State"))
+Q4 = inner_join(Q4,MedianIBU, by = c("State" = "State"))
+Q4 = distinct(Q4,State,.keep_all = TRUE)
+Q4ABVrange = Q4 %>% filter(medABV == max(medABV) | medABV == min(medABV)) # filter in max and min ABV
+Q4IBUrange = Q4 %>% filter(medIBU == max(medIBU) | medIBU == min(medIBU)) # filter in max and min IBU
+
+Q4ABVrangeWO = Q4 %>% filter(medABV != max(medABV) & medABV != min(medABV)) ## filter out min max ABV
+Q4IBUrangeWO = Q4 %>% filter(medIBU != max(medIBU) & medIBU != min(medIBU)) # filter out min max IBU
+
+
+# Medians
+# Now lets take the outlier states to make the gragh look better.
+Q4w = Q4 %>% filter(State != 'AK' & State != 'HI')
+Q4wABVrange = Q4w %>% filter(medABV == max(medABV) | medABV == min(medABV)) #filter in min max
+Q4wIBUrange = Q4w %>% filter(medIBU == max(medIBU) | medIBU == min(medIBU)) #Filter in min max IBU
+
+Q4wABVrangeWO = Q4w %>% filter(medABV != max(medABV) & medABV != min(medABV)) #filter out min max
+Q4wIBUrangeWO = Q4w %>% filter(medIBU != max(medIBU) & medIBU != min(medIBU)) #Filter out min max IBU
+
+# LOW HIGH ABV MEDIANS
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q4w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q4wABVrangeWO,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'white', size = 2.3) + geom_text(data = Q4wABVrange,aes(Long,Lat, label = medABV),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5) + labs(title = 'Median ABV By State (low/high highlighted red)')
+
+# LOW HIGH IBU MEDIANS
+ggplot() + geom_polygon(data = us_states, aes(long,lat,group=group), fill = 'blue', color = 'black') + geom_text(data = Q4w,aes(Long,Lat, label = State),hjust = 0, nudge_x = 0, color = 'black', size = 2) + geom_text(data = Q4wIBUrangeWO,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0.1, nudge_y = -0.5, color = 'white', size = 2.3) + geom_text(data = Q4wIBUrange,aes(Long,Lat, label = medIBU),hjust = 0, nudge_x = 0, nudge_y = -0.5, color = 'red', size = 2.5) + labs(title = 'Median IBU By State (low/high highlighted red)')
+
+```
+
+## Question 6: ABV Summary Statistics 
+**The distribution of ABV across beers is slightly right-skewed.**
+
+**Most beers’ ABV are within 2.5% and 10%.**
+
+**The median ABV is 5.6% and the mean is 5.98%.**
+
+**The max ABV is 12.8%.**
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# ABV summary statistics
+summary(mergeData.cleanABV$ABV)
+
+# Histogram of ABV distribution
+mergeData.cleanABV %>% select(ABV) %>% ggplot(mapping=aes(x = ABV)) + geom_histogram()
+```
+
+## Question 7: ABV vs IBU Scatterplot
+**There is a positive relationship between alcohol content and the bitterness of a beer generally.**
+
+**You can see the higher the ABV, the higher the IBU.**
+```{r, echo=FALSE, warning=FALSE}
+# Filter out observations with NA value in either ABV or IBU
+# Plot points with linear relationship line drawn
+beers %>% filter(!is.na(IBU)) %>% select(ABV, IBU) %>% ggplot(mapping = aes(ABV, IBU)) + geom_point() + stat_summary(fun.data=mean_cl_normal) + geom_smooth(method='lm')
+```
+
+# Question 8: Style Predictions from ABV and IBU in KNN
+**We selected k = 6 after cross-validation using 100 iterations of train/test data split and 1-30 k values. With k = 6, accuracy = 81.2%, sensitivity = 87.8%, and specificity = 71.3%.**
+```{r, echo=FALSE}
+
+brewState <- brew %>% group_by(State)%>% summarize(count = count(State))
+brew %>% filter(State == 'SD')
+
+#2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.  (RMD only, this does not need to be included in the presentation or the deck.)
+
+
+
+#Observe that ID on beers - Brewery_id and and breweries - Brew_ID  - we rename by Brew_ID
+
+mergeData = inner_join(brew,beers, by = c("Brew_ID" = "Brewery_id"))
+names(mergeData)
+
+mergeData <- dplyr::rename(mergeData, brewName = Name.x)
+mergeData <- dplyr::rename(mergeData, beerName = Name.y)
+
+mergeData.clean <- mergeData %>% filter(!is.na(ABV) &!is.na(IBU))
+view(mergeData.clean)
+
+typeAles <- cbind(mergeData.clean, type='Ales', stringsAsFactors=F) %>% filter(grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', beerName, ignore.case=T))
+
+typeIPA <- cbind(mergeData.clean, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', beerName, ignore.case=T))
+
+IPA.Ales <- union(typeAles, typeIPA)
+IPA.Ales$type <- as.factor(IPA.Ales$type)
+
+
+
+#KNN model
+set.seed(100)
+splitPerc = .7
+iterations = 100
+numks = 30
+masterAcc = matrix(nrow = iterations, ncol = numks)
+
+
+for(j in 1:iterations) {
+  accs = data.frame(accuracy = numeric(numks), k = numeric(numks))
+  trainIndices = sample(1:dim(IPA.Ales)[1],round(splitPerc * dim(IPA.Ales)[1]))
+  train = IPA.Ales[trainIndices,]
+  test = IPA.Ales[-trainIndices,]
+  for(i in 1:numks) {
+    classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],as.factor(train$type), prob = TRUE, k = i)
+    table(as.factor(test$type),classifications)
+    CM = confusionMatrix(table(as.factor(test$type),classifications))
+    masterAcc[j,i] = CM$overall[1]
+  }
+}
+
+
+
+MeanAcc = colMeans(masterAcc)
+
+plot(seq(1,numks,1),MeanAcc, type = "l")
+k <- which.max(MeanAcc)
+
+
+trainIndices = sample(1:dim(IPA.Ales)[1],round(splitPerc * dim(IPA.Ales)[1]))
+train = IPA.Ales[trainIndices,]
+test = IPA.Ales[-trainIndices,]
+
+classifications = knn(train[,c('IBU','ABV')],test[,c('IBU','ABV')],as.factor(train$type), prob = TRUE, k = k)
+table(as.factor(test$type),classifications)
+cfm = confusionMatrix(table(as.factor(test$type),classifications))
+
+Sensitivity = cfm$byClass['Sensitivity']
+Specificity = cfm$byClass['Specificity']
+Accuracy = cfm$overall['Accuracy']
+
+Accuracy
+Sensitivity
+Specificity
+```
+****
+
+## Question 9
+### Part 1: Style Predictions from IBU and Ounces (KNN)
+**With k = 6 and IBU and Ounce variables, below is the accuracy, sensitivity, and specificity**
+```{r, echo=FALSE}
+set.seed(100)
+#(9)
+# Now lets train using KNN but with IBU and ABV used as a seperate variable to classify
+mergeData.cleanIBU <- mergeData %>% filter(!is.na(IBU))
+typeAles <- cbind(mergeData.cleanIBU, type='Ales', stringsAsFactors=F) %>% filter(grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', beerName, ignore.case=T))
+
+typeIPA <- cbind(mergeData.cleanIBU, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', beerName, ignore.case=T))
+
+IPA.Ales <- union(typeAles, typeIPA)
+
+iterations = 100
+
+stat = data.frame()
+
+splitPerc = .7 #Training / Test split Percentage
+
+for(j in 1:iterations)
+{
+  
+  trainIndices = sample(1:dim(IPA.Ales)[1],round(splitPerc * dim(IPA.Ales)[1]))
+  train = IPA.Ales[trainIndices,]
+  test = IPA.Ales[-trainIndices,]
+  
+  classifications = knn(train[,c('IBU','Ounces')],test[,c('IBU', 'Ounces')],as.factor(train$type), prob = TRUE, k = k)
+  table(as.factor(test$type),classifications)
+  CM = confusionMatrix(table(as.factor(test$type),classifications))
+  
+  acc = CM$overall[1]
+  spec = CM$byClass[1]
+  sens= CM$byClass[2]
+  
+  stat <- bind_rows(stat,data.frame(c(acc),c(spec),c(sens)))
+}
+
+stat <- tibble::rowid_to_column(stat, "Seed")
+
+MeanAcc = mean(stat$c.acc.)
+MeanSens = mean(stat$c.sens.)
+MeanSpec = mean(stat$c.spec.)
+
+print("Mean Accuracy")
+MeanAcc 
+print("Mean Sensitivity")
+MeanSens
+print("Mean Specificity")
+MeanSpec
+```
+
+### Part 2: Style Predictions from ABV and Ounces (KNN)
+**With k = 6 and ABV and Ounce variables, below is the accuracy, sensitivity, and specificity.**
+```{r, echo=FALSE}
+set.seed(100)
+# Do the same for ABV
+mergeData.cleanABV <- mergeData %>% filter(!is.na(ABV))
+typeAles <- cbind(mergeData.cleanABV, type='Ales', stringsAsFactors=F) %>% filter(grepl('\\bale\\b', Style, ignore.case=T) | grepl('\\bale\\b', beerName, ignore.case=T))
+
+typeIPA <- cbind(mergeData.cleanABV, type='IPA', stringsAsFactors=F) %>% filter(grepl('\\bIPA\\b', Style, ignore.case=T) | grepl('\\bIPA\\b', beerName, ignore.case=T))
+
+IPA.Ales <- union(typeAles, typeIPA)
+
+stat = data.frame()
+
+for(j in 1:iterations)
+{
+  
+  trainIndices = sample(1:dim(IPA.Ales)[1],round(splitPerc * dim(IPA.Ales)[1]))
+  train = IPA.Ales[trainIndices,]
+  test = IPA.Ales[-trainIndices,]
+  
+  classifications = knn(train[,c('ABV','Ounces')],test[,c('ABV', 'Ounces')],as.factor(train$type), prob = TRUE, k = k)
+  table(as.factor(test$type),classifications)
+  CM = confusionMatrix(table(as.factor(test$type),classifications))
+  
+  acc = CM$overall[1]
+  spec = CM$byClass[1]
+  sens= CM$byClass[2]
+  
+  stat <- bind_rows(stat,data.frame(c(acc),c(spec),c(sens)))
+}
+
+stat <- tibble::rowid_to_column(stat, "Seed")
+
+
+MeanAcc = mean(stat$c.acc.)
+MeanSens = mean(stat$c.sens.)
+MeanSpec = mean(stat$c.spec.)
+
+print("Mean Accuracy")
+MeanAcc 
+print("Mean Sensitivity")
+MeanSens
+print("Mean Specificity")
+MeanSpec
+```
+
+## Conclusion
+**We learned that IBU does vary significantly state-to-state, while ABV varies little state-to-state. There is also a positive trend between ABV and IBU of the beers. The higher the ABV the higher the bitterness. Using ABV and IBU, you can somewhat confidently predict the style of beer. The standard size of a beer does not accurately predict the style of beer. We need to ensure future data has more complete IBU fields to get more out of our analysis.**
