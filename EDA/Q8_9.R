@@ -1,6 +1,7 @@
+brew <- read.csv(file.choose(),header = TRUE)
 brewState <- brew %>% group_by(State)%>% summarize(count = count(State))
 brew %>% filter(State == 'SD')
-
+brewState$count
 #2. Merge beer data with the breweries data. Print the first 6 observations and the last six observations to check the merged file.  (RMD only, this does not need to be included in the presentation or the deck.)
 
 #Import Beers data
@@ -12,6 +13,8 @@ beers
 #Observe that ID on beers - Brewery_id and and breweries - Brew_ID  - we rename by Brew_ID
 
 mergeData = inner_join(brew,beers, by = c("Brew_ID" = "Brewery_id"))
+colSums(is.na(mergeData))
+nrow(mergeData)
 names(mergeData)
 
 mergeData <- dplyr::rename(mergeData, brewName = Name.x)
@@ -76,7 +79,7 @@ Specificity
 
 
 
-#This for getting which of the 2 classes performed better bases on the model and the use of 100 different iterations for Spliting the data
+#This for getting which of the 2 classes performed better bases on the model and the use of 100 different iterations for Spliting the data using same K.
 
 iterations = 100
 
